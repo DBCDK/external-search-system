@@ -8,7 +8,7 @@
     </appender>
 
     <logger name="dk.dbc" level="DEBUG" />
-    <!--<logger name="dk.dbc.Pool" level="TRACE" />-->
+    <logger name="dk.dbc.ess.service" level="TRACE" />
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

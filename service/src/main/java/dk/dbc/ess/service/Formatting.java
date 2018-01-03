@@ -20,12 +20,17 @@ package dk.dbc.ess.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.openformat.FormatRequest;
 import dk.dbc.openformat.FormatResponse;
 import dk.dbc.openformat.OriginalData;
 import dk.dbc.openformat.OutputFormatType;
+import java.beans.XMLEncoder;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import javax.ws.rs.client.Client;
@@ -33,6 +38,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -46,6 +54,8 @@ import org.xml.sax.SAXException;
  * @author DBC {@literal <dbc.dk>}
  */
 public class Formatting {
+
+    private static final ObjectMapper O = new ObjectMapper();
 
     private static final Logger log = LoggerFactory.getLogger(Formatting.class);
 
@@ -69,6 +79,7 @@ public class Formatting {
     private Element format(Element in, String outputFormat, String id, String trackingId) {
         try {
             FormatRequest request = new FormatRequest();
+
             request.setIdentifier(id);
             request.setOutputFormat(OutputFormatType.fromValue(outputFormat));
             request.setTrackingId(trackingId);
@@ -79,11 +90,36 @@ public class Formatting {
                     .request(MediaType.APPLICATION_XML_TYPE)
                     .buildPost(Entity.entity(request, MediaType.APPLICATION_XML_TYPE));
 
+            if (log.isTraceEnabled()) {
+                StringWriter sw = new StringWriter();
+                try {
+                    JAXBContext carContext = JAXBContext.newInstance(FormatRequest.class);
+                    Marshaller carMarshaller = carContext.createMarshaller();
+                    carMarshaller.marshal(request, sw);
+                    log.trace("request = {}", sw);
+                } catch (JAXBException e) {
+                    log.trace("Cannot convert using JAXB", e);
+                }
+            }
+
             Response response = timerFormatRequest.time(() -> invocation.invoke());
             Response.StatusType status = response.getStatusInfo();
 
+            log.debug("status = {}", status);
+
             if (status.equals(Response.Status.OK)) {
                 FormatResponse formatted = response.readEntity(FormatResponse.class);
+                if (log.isTraceEnabled()) {
+                    StringWriter sw = new StringWriter();
+                    try {
+                        JAXBContext carContext = JAXBContext.newInstance(FormatResponse.class);
+                        Marshaller carMarshaller = carContext.createMarshaller();
+                        carMarshaller.marshal(formatted, sw);
+                        log.trace("response = {}", sw);
+                    } catch (JAXBException e) {
+                        log.trace("Cannot convert using JAXB", e);
+                    }
+                }
                 String error = formatted.getError();
                 if (error != null) {
                     log.error("Openformat responded with: " + error + " for: " + trackingId);
@@ -101,7 +137,7 @@ public class Formatting {
         return ERROR_DOCUMENT.getDocument("Internal Server Error");
     }
 
-    private  Element error(String message) {
+    private Element error(String message) {
         return ERROR_DOCUMENT.getDocument(message);
     }
 
@@ -111,6 +147,7 @@ public class Formatting {
 
     public Callable<Element> formattingError(String message) {
         return new FormattingError(message);
+
     }
 
     public class FormattingError implements Callable<Element> {
