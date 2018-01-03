@@ -5,23 +5,6 @@ settings:
     formats: netpunkt_standard,netpunkt_brief,netpunkt_marc21
     bases: libris,bibsys
 
-#database:
-#  driverClass: org.postgresql.Driver
-#  user: ${PGUSER:-duser}
-#  password: ${PGPASSWORD:-dpass}
-#  url: jdbc:postgresql://${PGHOST:-localhost}:${PGPORT:-5432}/${PGDATABASE:-data}
-#  properties:
-#    charSet: UTF-8
-#  maxWaitForConnection: 1s
-#  validationQuery: "/* MyService Health Check */ SELECT 1"
-#  validationQueryTimeout: 3s
-#  initialSize: ${POSTGRES_POOL_MIN:-1}
-#  minSize: ${POSTGRES_POOL_MIN:-1}
-#  maxSize: ${POSTGRES_POOL_MAX:-8}
-#  checkConnectionWhileIdle: false
-#  evictionInterval: 10s
-#  minIdleTime: 1 minute
-
 jerseyClient:
   timeout: 60000ms
   connectionTimeout: 500ms
