@@ -77,6 +77,7 @@
             <groupId>dk.dbc</groupId>
             <artifactId>dropwizard</artifactId>
             <version>${dropwizard.version}-SNAPSHOT</version>
+            <classifier>with-log</classifier>
         </dependency>
 
         <dependency>
@@ -90,7 +91,7 @@
             <artifactId>dropwizard-assets</artifactId>
             <version>${dropwizard.version}</version>
         </dependency>
-        
+                        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
