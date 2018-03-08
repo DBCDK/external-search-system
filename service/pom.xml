@@ -29,7 +29,7 @@
                     <!--<verbose>true</verbose>-->
                     <strict>false</strict>
                     <schemaDirectory>${basedir}/src/main/xsd</schemaDirectory>
-                    <noPackageLevelAnnotations>true</noPackageLevelAnnotations>
+                    <packageLevelAnnotations>false</packageLevelAnnotations>
                 </configuration>
             </plugin>
 

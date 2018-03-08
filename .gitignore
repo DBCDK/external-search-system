@@ -2,4 +2,6 @@
 **/nb-configuration.xml
 **/nbproject/
 **/target/
-
+# Intellij Idea
+**/*.iml
+.idea
