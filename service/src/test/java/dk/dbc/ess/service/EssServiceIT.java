@@ -101,16 +101,20 @@ public class EssServiceIT {
 
 
     @Test
-    public void fullFailTest() throws Exception {
+    public void openFormat404Test() throws Exception {
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test200", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test404", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
-        assertEquals("test200",r.trackingId);
+        assertEquals("test404",r.trackingId);
         assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
     }
 
     @Test
