@@ -2,6 +2,7 @@ package dk.dbc.ess.service;
 
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import dk.dbc.ess.service.response.EssResponse;
 import io.dropwizard.client.JerseyClientBuilder;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.ResourceHelpers;
@@ -9,11 +10,11 @@ import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.JerseyClient;
 import org.junit.*;
+import org.w3c.dom.Element;
 
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
-
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -90,8 +91,12 @@ public class EssServiceIT {
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test200", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
+        EssResponse r = response.readEntity(EssResponse.class);
         System.out.println( "fulltest: wiremockHttpPort = " + wiremockHttpPort );
         assertEquals(200, response.getStatus());
+        assertEquals(5800,r.hits);
+        assertEquals("test200",r.trackingId);
+        assertEquals(1,r.records.size());
     }
 
 
@@ -101,6 +106,26 @@ public class EssServiceIT {
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test200", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
+        EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(200, response.getStatus());
+        assertEquals(5800,r.hits);
+        assertEquals("test200",r.trackingId);
+        assertEquals(1,r.records.size());
+    }
+
+    @Test
+    public void openFormatConnectionFailed(){
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=connection-failed", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
+        assertEquals("connection-failed",r.trackingId);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
     }
 }
