@@ -15,6 +15,8 @@ import org.w3c.dom.Element;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
+
+import java.util.Set;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -48,35 +50,49 @@ public class EssServiceIT {
             ConfigOverride.config("settings.metaProxyUrl", "http://localhost:" + wiremockHttpPort + "/"),
             ConfigOverride.config("settings.openFormatUrl", "http://localhost:" + wiremockHttpPort + "/"));
 
+    /*stubFor(get(urlEqualTo("/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId="))
+            .willReturn(aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "text/xml")
+                    .withBody("<response>Some content</response>")));*/
+
 
 
     @Before
     public void setUp() {
-        conf = dropWizzardRule.getConfiguration();
-        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment()).build(UUID.randomUUID().toString() );
-
         // Timeouts on JerseyClients is neccesary for WireMock / Dropwizzard don't run
         // into timeouts due to startup complications.
-        client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
-        client.property(ClientProperties.READ_TIMEOUT,    1000);
+        conf = dropWizzardRule.getConfiguration();
+        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment()).build(UUID.randomUUID().toString() )
+                     .property(ClientProperties.CONNECT_TIMEOUT, 1000)
+                     .property(ClientProperties.READ_TIMEOUT,    1000);
 
         essService = new EssService(conf.getSettings(), dropWizzardRule.getEnvironment().metrics(), client );
     }
 
     @Test
-    public void foundTest() throws Exception {
-        /*stubFor(get(urlEqualTo("/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId="))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "text/xml")
-                        .withBody("<response>Some content</response>")));*/
-
+    public void essServiceBaseFoundTest() throws Exception {
+        /* This test is using the content of file mappings/bibsys-78a26727-2b4e-47b9-962d-9ff1e63cd597.json
+           to mock a response from bibsys
+        */
         Response result = essService.requestSru("bibsys", "horse", 1, 1);
         assertEquals(200, result.getStatus());
     }
 
     @Test
-    public void notfoundTest() throws Exception {
+    public void essServiceBaseInternalErrorTest() throws Exception {
+        stubFor(get(urlMatching("/bibsys.*"))
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withBody("")));
+
+        Response result = essService.requestSru("bibsys", "horse", 1, 1);
+        assertEquals(500, result.getStatus());
+    }
+
+
+    @Test
+    public void essServiceBaseNotFoundTest() throws Exception {
         stubFor(get(urlMatching(".*dog.*"))
                 .willReturn(aResponse()
                         .withStatus(404)));
@@ -86,13 +102,17 @@ public class EssServiceIT {
     }
 
     @Test
-    public void fullTest() throws Exception {
+    public void bibsysRespondingOKTest() throws Exception {
+        /* This test is using the content of file mappings/-4c15f69b-1ed5-47c3-8318-59dda08fbdf9.json
+           to mock a response from bibsys
+        */
         Response response = client.target(
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test200", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         System.out.println( "fulltest: wiremockHttpPort = " + wiremockHttpPort );
+
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
         assertEquals("test200",r.trackingId);
@@ -118,18 +138,50 @@ public class EssServiceIT {
     }
 
     @Test
-    public void openFormatConnectionFailed(){
+    public void openFormatConnectionFailed() {
         Response response = client.target(
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=connection-failed", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
-        assertEquals(5800,r.hits);
-        assertEquals("connection-failed",r.trackingId);
-        assertEquals(1,r.records.size());
-        Element e = (Element)r.records.get(0);
+        assertEquals(5800, r.hits);
+        assertEquals("connection-failed", r.trackingId);
+        assertEquals(1, r.records.size());
+        Element e = (Element) r.records.get(0);
         // Testing returned XML document for correct structure
-        assertEquals("error",e.getTagName());
-        assertEquals("message",e.getFirstChild().getNodeName());
+        assertEquals("error", e.getTagName());
+        assertEquals("message", e.getFirstChild().getNodeName());
     }
+
+    @Test
+    public void externalBaseNotReturningOKTest() throws Exception {
+        givenThat(get(urlMatching(".*query=horse.*"))
+        .willReturn(aResponse()
+                .withStatus(404)
+                .withBody("")));
+
+        // Test all configured external search systems
+        Set<String> bases = conf.getSettings().getBases();
+        for( String base: bases) {
+            Response response = client.target(
+                    String.format("http://localhost:%d/api/?base=%s&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test500",
+                            dropWizzardRule.getLocalPort(), base))
+                    .request()
+                    .get();
+            assertEquals(500, response.getStatus());
+        }
+    }
+
+    @Test
+    public void formatterNotValidTest() throws Exception {
+        /* This test is using the content of file mappings/-4c15f69b-1ed5-47c3-8318-59dda08fbdf9.json
+           to mock a response from bibsys.
+        */
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=XYZ&trackingId=test200", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        assertEquals(500, response.getStatus());
+    }
+
 }
