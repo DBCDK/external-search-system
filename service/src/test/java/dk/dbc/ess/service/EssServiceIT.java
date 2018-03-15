@@ -1,5 +1,6 @@
 package dk.dbc.ess.service;
 
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import dk.dbc.ess.service.response.EssResponse;
@@ -46,7 +47,7 @@ public class EssServiceIT {
     public void setUp() {
         conf = dropWizzardRule.getConfiguration();
         client = new JerseyClientBuilder(dropWizzardRule.getEnvironment())
-                .using(conf.getJerseyClient()).build(UUID.randomUUID().toString() ).property(ClientProperties.READ_TIMEOUT,1000);
+                .using(conf.getJerseyClient()).build(UUID.randomUUID().toString() ).property(ClientProperties.READ_TIMEOUT,1500);
 
         essService = new EssService(conf.getSettings(), dropWizzardRule.getEnvironment().metrics(), client );
     }
@@ -83,31 +84,53 @@ public class EssServiceIT {
 
     @Test
     public void bibsysRespondingOKTest() throws Exception {
-        /* This test is using the content of file mappings/-4c15f69b-1ed5-47c3-8318-59dda08fbdf9.json
-           to mock a response from bibsys
-        */
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test200", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
-        assertEquals("test200",r.trackingId);
         assertEquals(1,r.records.size());
     }
 
 
     @Test
     public void openFormat404Test() throws Exception {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // Ensures request to open format is a proper format request, and returns a 404
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")
+                        .withStatus(404)));
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test404", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
-        assertEquals("test404",r.trackingId);
         assertEquals(1,r.records.size());
         Element e = (Element)r.records.get(0);
         // Testing returned XML document for correct structure
@@ -117,13 +140,25 @@ public class EssServiceIT {
 
     @Test
     public void openFormatConnectionFailed() {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withHeader("Connection","Keep-Alive")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // Ensures request to open format is a proper format request, and makes a connection reset
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withFault(Fault.CONNECTION_RESET_BY_PEER)));
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=connection-failed", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(5800,r.hits);
-        assertEquals("connection-failed",r.trackingId);
         assertEquals(1,r.records.size());
         Element e = (Element)r.records.get(0);
         // Testing returned XML document for correct structure
@@ -133,14 +168,58 @@ public class EssServiceIT {
 
     @Test
     public void openFormatConnectionTimeout(){
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // Stubbing request to open format, with delay that would trigger a socket timeout response
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")
+                        .withFixedDelay(2000)));
         // In this response, open format response is delayed by 2s, making the socket time out
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=connection-timeout", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         assertEquals(5800,r.hits);
-        assertEquals("connection-timeout",r.trackingId);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
+    }
+
+    @Test
+    public void openFormatEmptyResponse(){
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // Stubbing request to open format, with empty body to ensure it does not crash the service
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withFault(Fault.EMPTY_RESPONSE)));
+        // In this response, open format response is delayed by 2s, making the socket time out
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
         assertEquals(1,r.records.size());
         Element e = (Element)r.records.get(0);
         // Testing returned XML document for correct structure
@@ -169,11 +248,16 @@ public class EssServiceIT {
 
     @Test
     public void formatterNotValidTest() throws Exception {
-        /* This test is using the content of file mappings/-4c15f69b-1ed5-47c3-8318-59dda08fbdf9.json
-           to mock a response from bibsys.
-        */
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // TODO open format should fail, and when we know how it errors, we should error appropriately
+        // TODO needs open format stub...
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=XYZ&trackingId=test200", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=XYZ&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         assertEquals(500, response.getStatus());
