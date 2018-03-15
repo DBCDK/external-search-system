@@ -1,7 +1,6 @@
 package dk.dbc.ess.service;
 
 import com.github.tomakehurst.wiremock.http.Fault;
-import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import dk.dbc.ess.service.response.EssResponse;
 import io.dropwizard.client.JerseyClientBuilder;
@@ -9,10 +8,10 @@ import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.ResourceHelpers;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.glassfish.jersey.client.ClientProperties;
-import org.glassfish.jersey.client.JerseyClient;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.w3c.dom.Element;
-
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -54,9 +53,11 @@ public class EssServiceIT {
 
     @Test
     public void essServiceBaseFoundTest() throws Exception {
-        /* This test is using the content of file mappings/bibsys-78a26727-2b4e-47b9-962d-9ff1e63cd597.json
-           to mock a response from bibsys
-        */
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
         Response result = essService.requestSru("bibsys", "horse", 1, 1);
         assertEquals(200, result.getStatus());
     }
