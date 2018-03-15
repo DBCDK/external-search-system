@@ -1,0 +1,14 @@
+{
+  "id" : "78a26727-2b4e-47b9-962d-9ff1e63cd597",
+  "name" : "bibsys",
+  "request" : {
+    "url" : "/bibsys?query=horseConnectionFailed&startRecord=1&maximumRecords=1",
+    "method" : "GET"
+  },
+  "response" : {
+    "fault": "CONNECTION_RESET_BY_PEER"
+  },
+  "uuid" : "78a26727-2b4e-47b9-962d-9ff1e63cd597",
+  "persistent" : true,
+  "insertionIndex" : 1
+}

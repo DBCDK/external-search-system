@@ -15,7 +15,6 @@ import org.w3c.dom.Element;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
-
 import java.util.Set;
 import java.util.UUID;
 
@@ -60,6 +59,9 @@ public class EssServiceIT {
 
     @Before
     public void setUp() {
+        conf = dropWizzardRule.getConfiguration();
+        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment()).build(UUID.randomUUID().toString() );
+
         // Timeouts on JerseyClients is neccesary for WireMock / Dropwizzard don't run
         // into timeouts due to startup complications.
         conf = dropWizzardRule.getConfiguration();
@@ -90,7 +92,6 @@ public class EssServiceIT {
         assertEquals(500, result.getStatus());
     }
 
-
     @Test
     public void essServiceBaseNotFoundTest() throws Exception {
         stubFor(get(urlMatching(".*dog.*"))
@@ -112,7 +113,6 @@ public class EssServiceIT {
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
         System.out.println( "fulltest: wiremockHttpPort = " + wiremockHttpPort );
-
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
         assertEquals("test200",r.trackingId);
@@ -144,13 +144,30 @@ public class EssServiceIT {
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
-        assertEquals(5800, r.hits);
-        assertEquals("connection-failed", r.trackingId);
-        assertEquals(1, r.records.size());
-        Element e = (Element) r.records.get(0);
+        assertEquals(5800,r.hits);
+        assertEquals("connection-failed",r.trackingId);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
         // Testing returned XML document for correct structure
         assertEquals("error", e.getTagName());
         assertEquals("message", e.getFirstChild().getNodeName());
+    }
+
+    @Test
+    public void openFormatConnectionTimeout(){
+        // In this response, open format response is delayed by 2s, making the socket time out
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=connection-timeout", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
+        assertEquals("connection-timeout",r.trackingId);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
     }
 
     @Test

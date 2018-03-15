@@ -6,7 +6,7 @@ settings:
     bases: libris,bibsys
 
 jerseyClient:
-  timeout: 60000ms
+  timeout: 700ms
   connectionTimeout: 500ms
   timeToLive: 1h
   cookiesEnabled: false
