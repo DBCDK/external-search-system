@@ -17,6 +17,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -29,45 +30,23 @@ public class EssServiceIT {
     private Client client;
     private EssService essService;
 
-
-    private final  String essHttpPort =  System.getProperty("ess.http.port", "8010");
-    private final  String essHttpsPort =  System.getProperty("ess.https.port", "8011");
-    private final static String wiremockHttpPort =  System.getProperty("wiremock.test-http.port", "8020");
-    private final static String wiremockHttpsPort =  System.getProperty("wiremock.test-https.port", "8021");
-
-    @ClassRule
-    public final static WireMockClassRule wireMockRule = new WireMockClassRule(wireMockConfig()
-            .port(Integer.parseInt(wiremockHttpPort))
-            .httpsPort(Integer.parseInt(wiremockHttpsPort))
-    );
+    @Rule
+    public WireMockRule wireMockRule = ((Supplier<WireMockRule>)()-> {
+        WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+        wireMockRule.start();
+        return wireMockRule;
+    }).get();
 
     @Rule
-    public WireMockClassRule instanceRule = wireMockRule;
-
-    @ClassRule
-    public final static DropwizardAppRule<EssConfiguration> dropWizzardRule = new DropwizardAppRule<>(EssApplication.class, CONFIG_PATH,
-            ConfigOverride.config("settings.metaProxyUrl", "http://localhost:" + wiremockHttpPort + "/"),
-            ConfigOverride.config("settings.openFormatUrl", "http://localhost:" + wiremockHttpPort + "/"));
-
-    /*stubFor(get(urlEqualTo("/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId="))
-            .willReturn(aResponse()
-                    .withStatus(200)
-                    .withHeader("Content-Type", "text/xml")
-                    .withBody("<response>Some content</response>")));*/
-
-
-
+    public final DropwizardAppRule<EssConfiguration> dropWizzardRule=new DropwizardAppRule<>(EssApplication.class, CONFIG_PATH,
+                    ConfigOverride.config("settings.metaProxyUrl", "http://localhost:" + wireMockRule.port() + "/"),
+                    ConfigOverride.config("settings.openFormatUrl", "http://localhost:" + wireMockRule.port() + "/"));
+    
     @Before
     public void setUp() {
         conf = dropWizzardRule.getConfiguration();
-        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment()).build(UUID.randomUUID().toString() );
-
-        // Timeouts on JerseyClients is neccesary for WireMock / Dropwizzard don't run
-        // into timeouts due to startup complications.
-        conf = dropWizzardRule.getConfiguration();
-        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment()).build(UUID.randomUUID().toString() )
-                     .property(ClientProperties.CONNECT_TIMEOUT, 1000)
-                     .property(ClientProperties.READ_TIMEOUT,    1000);
+        client = new JerseyClientBuilder(dropWizzardRule.getEnvironment())
+                .using(conf.getJerseyClient()).build(UUID.randomUUID().toString() ).property(ClientProperties.READ_TIMEOUT,1000);
 
         essService = new EssService(conf.getSettings(), dropWizzardRule.getEnvironment().metrics(), client );
     }
@@ -112,7 +91,6 @@ public class EssServiceIT {
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
-        System.out.println( "fulltest: wiremockHttpPort = " + wiremockHttpPort );
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
         assertEquals("test200",r.trackingId);

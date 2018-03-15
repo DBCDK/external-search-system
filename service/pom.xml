@@ -13,26 +13,6 @@
         
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>reserve-network-port</id>
-                        <goals>
-                            <goal>reserve-network-port</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <portNames>
-                                <portName>wiremock.test-http.port</portName>
-                                <portName>wiremock.test-https.port</portName>
-                                <portName>ess.http.port</portName>
-                                <portName>ess.https.port</portName>
-                            </portNames>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>            <plugin>
                 <groupId>org.jvnet.jaxb2.maven2</groupId>
                 <artifactId>maven-jaxb2-plugin</artifactId>
                 <version>0.13.1</version>
@@ -94,12 +74,6 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
-                    <!--                    <systemPropertyVariables>
-                                            <wiremock.test-http.port>${wiremock.test-http.port}</wiremock.test-http.port>
-                                            <wiremock.test-https.port>${wiremock.test-https.port}</wiremock.test-https.port>
-                                            <ess.http.port>${ess.http.port}</ess.http.port>
-                                            <ess.https.port>${ess.https.port}</ess.https.port>
-                                        </systemPropertyVariables> -->
                                     </configuration>
                                     <executions>
                                         <execution>
