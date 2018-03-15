@@ -239,7 +239,30 @@ public class EssServiceIT {
         Set<String> bases = conf.getSettings().getBases();
         for( String base: bases) {
             Response response = client.target(
-                    String.format("http://localhost:%d/api/?base=%s&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=test500",
+                    String.format("http://localhost:%d/api/?base=%s&query=horse&start=&rows=1&format=netpunkt_standard",
+                            dropWizzardRule.getLocalPort(), base))
+                    .request()
+                    .get();
+            assertEquals(500, response.getStatus());
+        }
+    }
+
+    @Test
+    public void externalBaseTimeoutTest() {
+        /* Testing Read-timeout for different bases
+         */
+        stubFor(get(urlMatching(".*query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBody("")
+                        .withFixedDelay(2000)));
+
+        // Test all configured external search systems
+        Set<String> bases = conf.getSettings().getBases();
+        for( String base: bases) {
+            Response response = client.target(
+                    String.format("http://localhost:%d/api/?base=%s&query=horse&start=&rows=1&format=netpunkt_standard",
                             dropWizzardRule.getLocalPort(), base))
                     .request()
                     .get();
