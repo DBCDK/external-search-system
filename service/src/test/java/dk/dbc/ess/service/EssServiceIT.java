@@ -3,6 +3,7 @@ package dk.dbc.ess.service;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import dk.dbc.ess.service.response.EssResponse;
+import dk.dbc.ess.service.response.HowRuResponse;
 import io.dropwizard.client.JerseyClientBuilder;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.ResourceHelpers;
@@ -22,6 +23,8 @@ import java.util.function.Supplier;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class EssServiceIT {
@@ -29,6 +32,9 @@ public class EssServiceIT {
     private EssConfiguration conf;
     private Client client;
     private EssService essService;
+
+    private final int readTimeout = 1500;              // ms
+    private final int fixedDelay  = readTimeout + 500; // ms
 
     @Rule
     public WireMockRule wireMockRule = ((Supplier<WireMockRule>)()-> {
@@ -46,7 +52,7 @@ public class EssServiceIT {
     public void setUp() {
         conf = dropWizzardRule.getConfiguration();
         client = new JerseyClientBuilder(dropWizzardRule.getEnvironment())
-                .using(conf.getJerseyClient()).build(UUID.randomUUID().toString() ).property(ClientProperties.READ_TIMEOUT,1500);
+                .using(conf.getJerseyClient()).build(UUID.randomUUID().toString() ).property(ClientProperties.READ_TIMEOUT,readTimeout);
 
         essService = new EssService(conf.getSettings(), dropWizzardRule.getEnvironment().metrics(), client );
     }
@@ -183,7 +189,7 @@ public class EssServiceIT {
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
                         .withBodyFile("open_format_horse_response.xml")
-                        .withFixedDelay(2000)));
+                        .withFixedDelay(fixedDelay)));
         // In this response, open format response is delayed by 2s, making the socket time out
         Response response = client.target(
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
@@ -214,7 +220,7 @@ public class EssServiceIT {
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
                         .withFault(Fault.EMPTY_RESPONSE)));
-        // In this response, open format response is delayed by 2s, making the socket time out
+
         Response response = client.target(
                 String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
                 .request()
@@ -251,12 +257,12 @@ public class EssServiceIT {
     public void externalBaseTimeoutTest() {
         /* Testing Read-timeout for different bases
          */
-        stubFor(get(urlMatching(".*query=horse&startRecord=1&maximumRecords=1"))
+        stubFor(get(urlMatching("/.*?query=horse&startRecord=1&maximumRecords=1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml")
-                        .withBody("")
-                        .withFixedDelay(2000)));
+                        .withBodyFile("open_format_horse_response.xml")
+                        .withFixedDelay(fixedDelay)));
 
         // Test all configured external search systems
         Set<String> bases = conf.getSettings().getBases();
@@ -286,5 +292,79 @@ public class EssServiceIT {
                 .get();
         assertEquals(500, response.getStatus());
     }
+
+    @Test
+    public void howRUAllOkTest() {
+        /*
+               metaProxyHealth  = URL: /       Returns Status: 200
+               openFormatHealth = URL: /?HowRU Returns Status: 200 Body: "Gr8"
+         */
+        stubFor(get(urlEqualTo("/"))
+                .willReturn(aResponse()
+                        .withStatus(200)));
+        stubFor(get(urlEqualTo("/?HowRU"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("Gr8")));
+
+        Response response = client.target(
+                String.format("http://localhost:%d/api/howru", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        assertEquals(200, response.getStatus());
+        HowRuResponse result = response.readEntity(HowRuResponse.class);
+
+        assertTrue(result.ok);
+        assertEquals(null, result.message);
+
+    }
+
+    @Test
+    public void howRUOpensearchNotOkTest() {
+        /*
+               metaProxyHealth  = URL: /       Returns Status: 200
+               openFormatHealth = URL: /?HowRU Returns Status: 200 Body: "Gr8"
+         */
+        stubFor(get(urlEqualTo("/"))
+                .willReturn(aResponse()
+                        .withStatus(200)));
+        stubFor(get(urlEqualTo("/?HowRU"))
+                .willReturn(aResponse()
+                        .withStatus(500)));
+
+        checkHealthCheck();
+    }
+
+    @Test
+    public void howRUMetaproxyNotOkTest() {
+        /*
+               metaProxyHealth  = URL: /       Returns Status: 200
+               openFormatHealth = URL: /?HowRU Returns Status: 200 Body: "Gr8"
+         */
+        stubFor(get(urlEqualTo("/"))
+                .willReturn(aResponse()
+                        .withStatus(404)));
+        stubFor(get(urlEqualTo("/?HowRU"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("Gr8")));
+
+        checkHealthCheck();
+    }
+
+
+    private void checkHealthCheck() {
+        Response response = client.target(
+                String.format("http://localhost:%d/api/howru", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+
+        HowRuResponse result = response.readEntity(HowRuResponse.class);
+
+        assertEquals(200, response.getStatus());
+        assertFalse(result.ok);
+        assertEquals("downstream error - check healthchecks on admin url", result.message);
+    }
+
 
 }
