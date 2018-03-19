@@ -24,6 +24,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 
@@ -112,6 +113,11 @@ public class EssServiceIT {
         assertEquals(200, response.getStatus());
         assertEquals(5800,r.hits);
         assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertNotEquals("error",e.getTagName());
+        assertNotEquals("message",e.getFirstChild().getNodeName());
+
     }
 
 
@@ -266,6 +272,69 @@ public class EssServiceIT {
     }
 
     @Test
+    public void baseSearchGarbledEscapingErrorResponse(){
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_garbled_escaping_response.xml")));
+        // Stubbing request to open format, with empty body to ensure it does not crash the service
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
+
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
+    }
+
+    @Test
+    public void baseSearchDuplicateRecordsErrorResponse(){
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_duplicate_record_response.xml")));
+        // Stubbing request to open format, with empty body to ensure it does not crash the service
+        stubFor(post(urlEqualTo("/"))
+                .withRequestBody(matchingXPath("/fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
+
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertEquals("error",e.getTagName());
+        assertEquals("message",e.getFirstChild().getNodeName());
+
+    }
+
+    @Test
     public void externalBaseNotReturningOKTest() throws Exception {
         givenThat(get(urlMatching(".*query=horse.*"))
         .willReturn(aResponse()
@@ -323,6 +392,23 @@ public class EssServiceIT {
                 .get();
         assertEquals(500, response.getStatus());
     }*/
+
+    @Test
+    public void baseNotValidTest() throws Exception {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // TODO open format should fail, and when we know how it errors, we should error appropriately
+        // TODO needs open format stub...
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=XYZ&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        assertEquals(500, response.getStatus());
+    }
 
     @Test
     public void howRUAllOkTest() {
