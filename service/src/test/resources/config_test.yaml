@@ -2,7 +2,6 @@
 settings:
     metaProxyUrl: test
     openFormatUrl: test
-    formats: netpunkt_standard,netpunkt_brief,netpunkt_marc21
     bases: libris,bibsys
 
 jerseyClient:

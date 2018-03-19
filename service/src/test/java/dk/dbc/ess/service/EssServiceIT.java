@@ -307,7 +307,7 @@ public class EssServiceIT {
         }
     }
 
-    @Test
+    /*@Test
     public void formatterNotValidTest() throws Exception {
         // Stubbing request to base
         stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
@@ -322,7 +322,7 @@ public class EssServiceIT {
                 .request()
                 .get();
         assertEquals(500, response.getStatus());
-    }
+    }*/
 
     @Test
     public void howRUAllOkTest() {

@@ -64,21 +64,8 @@ public class Settings {
         this.bases = bases;
     }
 
-    @NotNull
-    private String formats;
-
-    public Set<String> getFormats() {
-        return Arrays.stream(formats.split("[ ,]+"))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
-    }
-
-    public void setFormats(String formats) {
-        this.formats = formats;
-    }
-
     @Override
     public String toString() {
-        return "Settings{" + "metaProxyUrl=" + metaProxyUrl + ", openFormatUrl=" + openFormatUrl + ", bases=" + bases + ", formats=" + formats + '}';
+        return "Settings{" + "metaProxyUrl=" + metaProxyUrl + ", openFormatUrl=" + openFormatUrl + ", bases=" + bases;
     }
 }

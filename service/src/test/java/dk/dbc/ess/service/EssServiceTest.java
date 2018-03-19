@@ -100,16 +100,6 @@ public class EssServiceTest {
     }
 
     @Test
-    public void testRequestBadFormat() throws Exception {
-        EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
-        doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response.xml")).when(essService).responseSru(any(Response.class));
-        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyInt(), anyInt());
-
-        Response resp = essService.request("base", "", 0, 0, "badformat", null);
-        assertNotEquals("Not success", 200, resp.getStatus());
-    }
-
-    @Test
     public void testRequestBadEscape() throws Exception {
         EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
         doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response_bad_escape.xml")).when(essService).responseSru(any(Response.class));
@@ -133,7 +123,6 @@ public class EssServiceTest {
         essService.executor = mockExecutorService();
         essService.formatting = makeFormatting(docs);
         essService.knownBases = Arrays.asList(bases.split(","));
-        essService.knownFormats = Arrays.asList(formats.split(","));
         doCallRealMethod().when(essService).request(anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
         doCallRealMethod().when(essService).serverError(anyString());
         doCallRealMethod().when(essService).buildResponse(any(SearchRetrieveResponse.class), anyString(), anyString(), anyString());
