@@ -57,7 +57,6 @@ public class EssService {
     private static final Logger log = LoggerFactory.getLogger(EssService.class);
 
     Client client;
-    Collection<String> knownFormats;
     Collection<String> knownBases;
     String sruTargetUrl;
     Formatting formatting;
@@ -70,7 +69,6 @@ public class EssService {
     public EssService(Settings settings, MetricRegistry metrics, Client client) {
         this.client = client;
 
-        this.knownFormats = settings.getFormats();
         this.knownBases = settings.getBases();
         this.sruTargetUrl = settings.getMetaProxyUrl();
 
@@ -104,9 +102,6 @@ public class EssService {
         }
         if (!knownBases.contains(base)) {
             return serverError("Unknown base requested");
-        }
-        if (!knownFormats.contains(format)) {
-            return serverError("Unknown output requested");
         }
         log.info("base: " + base + "; format: " + format +
                  "; start: " + start + "; rows: " + rows +

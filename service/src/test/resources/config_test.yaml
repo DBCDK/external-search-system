@@ -1,11 +1,11 @@
 
 settings:
-    metaProxyUrl: ${META_PROXY_URL}
-    openFormatUrl: ${OPEN_FORMAT_URL}
+    metaProxyUrl: test
+    openFormatUrl: test
     bases: libris,bibsys
 
 jerseyClient:
-  timeout: 60000ms
+  timeout: 1s
   connectionTimeout: 500ms
   timeToLive: 1h
   cookiesEnabled: false
@@ -28,7 +28,7 @@ server:
   rootPath: /api
   applicationConnectors:
     - type: http
-      port: 8010
+      port: 0
   adminConnectors:
     - type: http
-      port: 8011
+      port: 0
