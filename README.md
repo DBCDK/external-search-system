@@ -6,9 +6,7 @@ Service som faciliterer universal search, hvor resultater kan returneres i forma
 
 Servicen er et Drop Wizard projekt med config filen i `service/src/main/resources/config.yaml`. Følgende environment variabler er påkrævede:
  - `BASES`: Hvilke baser som servicen tillader at efterspørge meta proxyen med til universal search.
- - `FORMATS`: Hvilke ouput formater der accepteres. Skal på sigt fjernes, så Open Format bestemmer hvilke formater der afvises.
  - `META_PROXY_URL`: Endpoint for meta proxy til universal search.
- - `OPEN_AGENCY_URL`: Url til en open agency service.
  - `OPEN_FORMAT_URL`: Url til en open format service. 
  
 Et docker image kan også bygges ved at køre `mvn clean package`.
@@ -25,7 +23,4 @@ Eksempel URL:
  
 ## Noter
 
- - Burde sende format parameter direkte videre til open-format uden at foretage nogle checks. ie. slet format godkendelse og PATH parameter halløj
- - ~~Få deployed ess~~
  - Få openformat endpoint der kan ikke fejler, deploy ess med denne
- - ~~Lav dokumentation af ess~~
