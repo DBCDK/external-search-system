@@ -99,8 +99,11 @@ public class EssServiceIT {
                         .withHeader("Content-Type","text/xml")
                         .withBodyFile("base_bibsys_horse_response.xml")));
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
@@ -131,8 +134,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_horse_response.xml")));
         // Ensures request to open format is a proper format request, and returns a 404
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
                         .withBodyFile("open_format_horse_response.xml")
@@ -162,8 +168,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_horse_response.xml")));
         // Ensures request to open format is a proper format request, and makes a connection reset
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withFault(Fault.CONNECTION_RESET_BY_PEER)));
         Response response = client.target(
@@ -189,8 +198,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_horse_response.xml")));
         // Stubbing request to open format, with delay that would trigger a socket timeout response
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
@@ -210,6 +222,37 @@ public class EssServiceIT {
         assertEquals("message",e.getFirstChild().getNodeName());
     }
 
+    // TODO Maybe move this test over to positive tests?
+    @Test
+    public void openFormatTrakcingIdPassed(){
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // Stubbing request to open format, with empty body to ensure it does not crash the service
+        stubFor(post(urlEqualTo("/"))
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct tracking ID is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'trackingId']/text()",equalTo("track1234")))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
+
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=track1234", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5800,r.hits);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+    }
+
     @Test
     public void openFormatEmptyResponse(){
         // Stubbing request to base
@@ -220,8 +263,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_horse_response.xml")));
         // Stubbing request to open format, with empty body to ensure it does not crash the service
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
@@ -250,8 +296,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_horse_response.xml")));
         // Stubbing request to open format, with empty body to ensure it does not crash the service
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
@@ -281,8 +330,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_garbled_escaping_response.xml")));
         // Stubbing request to open format, with empty body to ensure it does not crash the service
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
@@ -312,8 +364,11 @@ public class EssServiceIT {
                         .withBodyFile("base_bibsys_duplicate_record_response.xml")));
         // Stubbing request to open format, with empty body to ensure it does not crash the service
         stubFor(post(urlEqualTo("/"))
-                .withRequestBody(matchingXPath("/fr:formatRequest")
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
                         .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
