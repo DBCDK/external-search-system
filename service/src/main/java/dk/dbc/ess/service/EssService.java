@@ -100,9 +100,6 @@ public class EssService {
         if (trackingId == null || trackingId.isEmpty()) {
             trackingId = UUID.randomUUID().toString();
         }
-        if (!knownBases.contains(base)) {
-            return serverError("Unknown base requested");
-        }
         log.info("base: " + base + "; format: " + format +
                  "; start: " + start + "; rows: " + rows +
                  "; trackingId: " + trackingId + "; query: " + query);

@@ -90,16 +90,6 @@ public class EssServiceTest {
     }
 
     @Test
-    public void testRequestBadBase() throws Exception {
-        EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
-        doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response.xml")).when(essService).responseSru(any(Response.class));
-        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyInt(), anyInt());
-
-        Response resp = essService.request("badbase", "", 0, 0, "format", null);
-        assertNotEquals("Not success", 200, resp.getStatus());
-    }
-
-    @Test
     public void testRequestBadEscape() throws Exception {
         EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
         doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response_bad_escape.xml")).when(essService).responseSru(any(Response.class));
