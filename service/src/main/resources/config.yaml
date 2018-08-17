@@ -1,6 +1,7 @@
 settings:
     metaProxyUrl: ${META_PROXY_URL}
     openFormatUrl: ${OPEN_FORMAT_URL}
+    formats: ${FORMATS}
     bases: ${BASES}
 
 jerseyClient:
