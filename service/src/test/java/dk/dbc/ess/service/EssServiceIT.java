@@ -449,6 +449,23 @@ public class EssServiceIT {
     }*/
 
     @Test
+    public void baseNotValidTest() throws Exception {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        // TODO open format should fail, and when we know how it errors, we should error appropriately
+        // TODO needs open format stub...
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=XYZ&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        assertEquals(500, response.getStatus());
+    }
+
+    @Test
     public void howRUAllOkTest() {
         /*
                metaProxyHealth  = URL: /       Returns Status: 200
