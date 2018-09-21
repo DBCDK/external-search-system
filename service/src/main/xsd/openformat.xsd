@@ -19,7 +19,6 @@ You should have received a copy of the GNU Affero General Public License along w
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element ref="of:identifier"></xs:element>
 				<xs:element ref="of:agency" minOccurs="0"/>
 				<xs:element ref="of:authentication" minOccurs="0"/>
 				<xs:element ref="of:callback" minOccurs="0"/>
@@ -96,6 +95,7 @@ You should have received a copy of the GNU Affero General Public License along w
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
+				<xs:element ref="of:identifier"></xs:element>
 				<xs:any namespace="##other" processContents="skip" />
 			</xs:sequence>
 		</xs:complexType>

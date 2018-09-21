@@ -25,14 +25,14 @@ import dk.dbc.openformat.FormatRequest;
 import dk.dbc.openformat.FormatResponse;
 import dk.dbc.openformat.OriginalData;
 import dk.dbc.openformat.OutputFormatType;
-import java.beans.XMLEncoder;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
-import java.util.concurrent.Callable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -41,13 +41,11 @@ import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.LinkedList;
+import java.util.concurrent.Callable;
 
 /**
  *
@@ -80,10 +78,10 @@ public class Formatting {
         try {
             FormatRequest request = new FormatRequest();
 
-            request.setIdentifier(id);
             request.setOutputFormat(OutputFormatType.fromValue(outputFormat));
             request.setTrackingId(trackingId);
             OriginalData originalData = new OriginalData();
+            originalData.setIdentifier(id);
             originalData.setAny(in);
             request.getOriginalDatas().add(originalData);
             Invocation invocation = client.target(openFormatUrl)
