@@ -65,12 +65,14 @@ public class EssService {
     Timer timerSruRequest;
     Timer timerSruReadResponse;
     Timer timerRequest;
+    int maxPageSize;
 
     public EssService(Settings settings, MetricRegistry metrics, Client client) {
         this.client = client;
 
         this.knownBases = settings.getBases();
         this.sruTargetUrl = settings.getMetaProxyUrl();
+        this.maxPageSize = settings.getMaxPageSize();
 
         this.executor = Executors.newCachedThreadPool();
         this.formatting = new Formatting(settings, metrics, client);
@@ -94,8 +96,8 @@ public class EssService {
         if (start == null) {
             start = 1;
         }
-        if (rows == null) {
-            rows = 10;
+        if (rows == null || rows >= maxPageSize) {
+            rows = maxPageSize;
         }
         if (trackingId == null || trackingId.isEmpty()) {
             trackingId = UUID.randomUUID().toString();
