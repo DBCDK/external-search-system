@@ -482,7 +482,31 @@ public class EssServiceIT {
                         .withHeader("Content-Type","text/xml;charset=UTF-8")
                         .withBodyFile("open_format_horse_response.xml")));
         Response response = client.target(
-                String.format("http://localhost:%d/api/?base=bibsys&query=horse&format=netpunkt_standard&maximumRecords=100", dropWizzardRule.getLocalPort()))
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&format=netpunkt_standard&rows=100", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(5, r.records.size());
+    }
+
+    @Test
+    public void maxPageSizeDefaultToMax() throws Exception {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?query=horse&startRecord=1&maximumRecords=5"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("response_max_page_5.xml")));
+        stubFor(post(urlEqualTo("/"))
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
+        Response response = client.target(
+                String.format("http://localhost:%d/api/?base=bibsys&query=horse&format=netpunkt_standard", dropWizzardRule.getLocalPort()))
                 .request()
                 .get();
         EssResponse r = response.readEntity(EssResponse.class);
