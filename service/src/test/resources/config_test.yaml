@@ -2,6 +2,7 @@
 settings:
     metaProxyUrl: test
     openFormatUrl: test
+    maxPageSize: 5
     bases: libris,bibsys
 
 jerseyClient:

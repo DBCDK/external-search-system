@@ -64,6 +64,17 @@ public class Settings {
         this.bases = bases;
     }
 
+    @NotNull
+    private Integer maxPageSize;
+
+    public Integer getMaxPageSize() {
+        return maxPageSize;
+    }
+
+    public void setMaxPageSize(Integer maxPageSize) {
+        this.maxPageSize = maxPageSize;
+    }
+
     @Override
     public String toString() {
         return "Settings{" + "metaProxyUrl=" + metaProxyUrl + ", openFormatUrl=" + openFormatUrl + ", bases=" + bases;
