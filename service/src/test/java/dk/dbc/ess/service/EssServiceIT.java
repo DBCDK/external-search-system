@@ -65,7 +65,7 @@ public class EssServiceIT {
                         .withStatus(200)
                         .withHeader("Content-Type","text/xml")
                         .withBodyFile("base_bibsys_horse_response.xml")));
-        Response result = essService.requestSru("bibsys", "horse", 1, 1);
+        Response result = essService.requestSru("bibsys", "query", "horse", 1, 1);
         assertEquals(200, result.getStatus());
     }
 
@@ -76,7 +76,7 @@ public class EssServiceIT {
                         .withStatus(500)
                         .withBody("")));
 
-        Response result = essService.requestSru("bibsys", "horse", 1, 1);
+        Response result = essService.requestSru("bibsys", "query", "horse", 1, 1);
         assertEquals(500, result.getStatus());
     }
 
@@ -86,7 +86,7 @@ public class EssServiceIT {
                 .willReturn(aResponse()
                         .withStatus(404)));
 
-        Response result = essService.requestSru("bibsys", "dog", 1, 1);
+        Response result = essService.requestSru("bibsys", "query", "dog", 1, 1);
         assertEquals(404, result.getStatus());
     }
 
@@ -120,9 +120,39 @@ public class EssServiceIT {
         // Testing returned XML document for correct structure
         assertNotEquals("error",e.getTagName());
         assertNotEquals("message",e.getFirstChild().getNodeName());
-
     }
 
+    @Test
+    public void bibsysRPNRespondingOKTest() throws Exception {
+        // Stubbing request to base
+        stubFor(get(urlEqualTo("/bibsys?x-pquery=horse&startRecord=1&maximumRecords=1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml")
+                        .withBodyFile("base_bibsys_horse_response.xml")));
+        stubFor(post(urlEqualTo("/"))
+                // Check root is format request with correct namespace
+                .withRequestBody(matchingXPath("//fr:formatRequest")
+                        .withXPathNamespace("fr","http://oss.dbc.dk/ns/openformat"))
+                // Check the correct format is requested
+                .withRequestBody(matchingXPath("/*[local-name() = 'formatRequest']/*[local-name() = 'outputFormat']/text()",equalTo("netpunkt_standard")))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","text/xml;charset=UTF-8")
+                        .withBodyFile("open_format_horse_response.xml")));
+        Response response = client.target(
+                String.format("http://localhost:%d/api/rpn/?base=bibsys&query=horse&start=&rows=1&format=netpunkt_standard&trackingId=", dropWizzardRule.getLocalPort()))
+                .request()
+                .get();
+        EssResponse r = response.readEntity(EssResponse.class);
+        assertEquals(200, response.getStatus());
+        assertEquals(5800,r.hits);
+        assertEquals(1,r.records.size());
+        Element e = (Element)r.records.get(0);
+        // Testing returned XML document for correct structure
+        assertNotEquals("error",e.getTagName());
+        assertNotEquals("message",e.getFirstChild().getNodeName());
+    }
 
     @Test
     public void openFormat404Test() throws Exception {

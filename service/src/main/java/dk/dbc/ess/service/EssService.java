@@ -87,12 +87,27 @@ public class EssService {
     }
 
     @GET
-    public Response request(@QueryParam("base") @NotNull String base,
-                            @QueryParam("query") @NotNull String query,
-                            @QueryParam("start") Integer start,
-                            @QueryParam("rows") Integer rows,
-                            @QueryParam("format") @NotNull String format,
-                            @QueryParam("trackingId") String trackingId) {
+    @Path("rpn/")
+    public Response requestRPN(@QueryParam("base") @NotNull String base,
+                               @QueryParam("query") @NotNull String query,
+                               @QueryParam("start") Integer start,
+                               @QueryParam("rows") Integer rows,
+                               @QueryParam("format") @NotNull String format,
+                               @QueryParam("trackingId") String trackingId) {
+        return processRequest(base, query, start, rows, format, trackingId, true);
+    }
+
+    @GET
+    public Response requestCQL(@QueryParam("base") @NotNull String base,
+                               @QueryParam("query") @NotNull String query,
+                               @QueryParam("start") Integer start,
+                               @QueryParam("rows") Integer rows,
+                               @QueryParam("format") @NotNull String format,
+                               @QueryParam("trackingId") String trackingId) {
+        return processRequest(base, query, start, rows, format, trackingId, false);
+    }
+
+    private Response processRequest(String base, String query, Integer start, Integer rows, String format, String trackingId, boolean isRPN) {
         if (start == null) {
             start = 1;
         }
@@ -106,11 +121,12 @@ public class EssService {
             return serverError("Unknown base requested");
         }
         log.info("base: " + base + "; format: " + format +
-                 "; start: " + start + "; rows: " + rows +
-                 "; trackingId: " + trackingId + "; query: " + query);
+                "; start: " + start + "; rows: " + rows +
+                "; trackingId: " + trackingId + "; query: " + query + "; type: " + (isRPN ? "rpn" : "cql"));
 
         try (Timer.Context timer = timerRequest.time()) {
-            Response response = requestSru(base, query, start, rows);
+            String queryParam = isRPN ? "x-pquery" : "query";
+            Response response = requestSru(base, queryParam, query, start, rows);
 
             if (!response.getStatusInfo().equals(Response.Status.OK)) {
                 log.error("Search failed with http code: " + response.getStatusInfo() + " for: " + trackingId);
@@ -193,11 +209,11 @@ public class EssService {
         return Response.ok(essResponse, MediaType.APPLICATION_XML_TYPE).build();
     }
 
-    Response requestSru(String base, String query, Integer start, Integer stepvalue) throws Exception {
+    Response requestSru(String base, String queryParam, String query, Integer start, Integer stepvalue) throws Exception {
         Invocation invocation = client
                 .target(sruTargetUrl)
                 .path(base)
-                .queryParam("query", query)
+                .queryParam(queryParam, query)
                 .queryParam("startRecord", start)
                 .queryParam("maximumRecords", stepvalue)
                 .request(MediaType.APPLICATION_XML_TYPE)
