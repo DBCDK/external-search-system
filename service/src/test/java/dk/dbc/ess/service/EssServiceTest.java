@@ -39,10 +39,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAnyElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.xpath.XPathExpressionException;
-import org.junit.Ignore;
+
 import org.junit.Test;
 import org.mockito.stubbing.OngoingStubbing;
 import org.w3c.dom.Element;
@@ -78,12 +76,24 @@ public class EssServiceTest {
     }
 
     @Test
-    public void testRequestSuccess() throws Exception {
+    public void testCQLRequestSuccess() throws Exception {
         EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
         doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response.xml")).when(essService).responseSru(any(Response.class));
-        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyInt(), anyInt());
+        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyString(), anyInt(), anyInt());
 
-        Response resp = essService.request("base", "", 0, 0, "format", "T");
+        Response resp = essService.requestCQL("base", "", 0, 0, "format", "T");
+        EssResponse entity = (EssResponse) resp.getEntity();
+        boolean equivalent = compare("/sru/expected_success.xml", writeXmlObject(entity));
+        assertTrue("Documents are expected to be equivalent: ", equivalent);
+    }
+
+    @Test
+    public void testRPNRequestSuccess() throws Exception {
+        EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
+        doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response.xml")).when(essService).responseSru(any(Response.class));
+        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyString(), anyInt(), anyInt());
+
+        Response resp = essService.requestRPN("base", "", 0, 0, "format", "T");
         EssResponse entity = (EssResponse) resp.getEntity();
         boolean equivalent = compare("/sru/expected_success.xml", writeXmlObject(entity));
         assertTrue("Documents are expected to be equivalent: ", equivalent);
@@ -93,9 +103,9 @@ public class EssServiceTest {
     public void testRequestBadBase() throws Exception {
         EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
         doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response.xml")).when(essService).responseSru(any(Response.class));
-        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyInt(), anyInt());
+        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyString(), anyInt(), anyInt());
 
-        Response resp = essService.request("badbase", "", 0, 0, "format", null);
+        Response resp = essService.requestCQL("badbase", "", 0, 0, "format", null);
         assertNotEquals("Not success", 200, resp.getStatus());
     }
 
@@ -103,9 +113,9 @@ public class EssServiceTest {
     public void testRequestBadEscape() throws Exception {
         EssService essService = mockService("base", "format", "<foo/>", "<bar/>");
         doReturn(readXMLObject(SearchRetrieveResponse.class, "/sru/response_bad_escape.xml")).when(essService).responseSru(any(Response.class));
-        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyInt(), anyInt());
+        doReturn(responseOk).when(essService).requestSru(anyString(), anyString(), anyString(), anyInt(), anyInt());
 
-        Response resp = essService.request("base", "", 0, 0, "format", "T");
+        Response resp = essService.requestCQL("base", "", 0, 0, "format", "T");
         assertEquals("Success", 200, resp.getStatus());
         EssResponse entity = (EssResponse) resp.getEntity();
         String actual = writeXmlObject(entity);
@@ -123,7 +133,8 @@ public class EssServiceTest {
         essService.executor = mockExecutorService();
         essService.formatting = makeFormatting(docs);
         essService.knownBases = Arrays.asList(bases.split(","));
-        doCallRealMethod().when(essService).request(anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
+        doCallRealMethod().when(essService).requestCQL(anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
+        doCallRealMethod().when(essService).requestRPN(anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
         doCallRealMethod().when(essService).serverError(anyString());
         doCallRealMethod().when(essService).buildResponse(any(SearchRetrieveResponse.class), anyString(), anyString(), anyString());
         return essService;
