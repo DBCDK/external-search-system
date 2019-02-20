@@ -139,10 +139,10 @@ You should have received a copy of the GNU Affero General Public License along w
 			<xs:documentation xml:lang="en">The output formats that can be returned by the service.</xs:documentation>
 		</xs:annotation>
 		<xs:restriction base="xs:string">
-			<xs:enumeration value="netpunkt_standard"/>
+			<!--<xs:enumeration value="netpunkt_standard"/>
 			<xs:enumeration value="netpunkt_brief"/>
 			<xs:enumeration value="netpunkt_marc21"/>
-			<xs:enumeration value="bob_detail"/>
+			<xs:enumeration value="bob_detail"/>-->
 		</xs:restriction>
 	</xs:simpleType>
 	<xs:simpleType name="outputTypeType">

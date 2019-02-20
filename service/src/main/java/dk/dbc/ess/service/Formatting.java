@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.openformat.FormatRequest;
 import dk.dbc.openformat.FormatResponse;
 import dk.dbc.openformat.OriginalData;
-import dk.dbc.openformat.OutputFormatType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -78,7 +77,7 @@ public class Formatting {
         try {
             FormatRequest request = new FormatRequest();
 
-            request.setOutputFormat(OutputFormatType.fromValue(outputFormat));
+            request.setOutputFormat(outputFormat);
             request.setTrackingId(trackingId);
             OriginalData originalData = new OriginalData();
             originalData.setIdentifier(id);
