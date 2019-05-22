@@ -48,7 +48,7 @@ public class EssServiceIT {
     public final DropwizardAppRule<EssConfiguration> dropWizzardRule=new DropwizardAppRule<>(EssApplication.class, CONFIG_PATH,
                     ConfigOverride.config("settings.metaProxyUrl", "http://localhost:" + wireMockRule.port() + "/"),
                     ConfigOverride.config("settings.openFormatUrl", "http://localhost:" + wireMockRule.port() + "/"));
-    
+
     @Before
     public void setUp() {
         conf = dropWizzardRule.getConfiguration();
@@ -611,7 +611,7 @@ public class EssServiceIT {
 
         HowRuResponse result = response.readEntity(HowRuResponse.class);
 
-        assertEquals(200, response.getStatus());
+        assertEquals(500, response.getStatus());
         assertFalse(result.ok);
         assertEquals("downstream error - check healthchecks on admin url", result.message);
     }
