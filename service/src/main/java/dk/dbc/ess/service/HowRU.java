@@ -28,6 +28,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+
 /**
  *
  * @author DBC {@literal <dbc.dk>}
@@ -49,7 +51,7 @@ public class HowRU {
         if (ok) {
             return Response.ok(new HowRuResponse(null)).build();
         } else {
-            return Response.ok(new HowRuResponse("downstream error - check healthchecks on admin url")).build();
+            return Response.status(INTERNAL_SERVER_ERROR).entity(new HowRuResponse("downstream error - check healthchecks on admin url")).build();
         }
     }
 
